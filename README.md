@@ -16,11 +16,11 @@ objetivo del Sprint 1 (US-01, US-02, US-03 y US-05).
 trae todo dentro y funciona sin conexión.
 
 1. Entra a la sección **[Releases](../../releases)** de este repositorio.
-2. Descarga el archivo de la última versión:
-   - **`MailWatch-portable-0.1.0.exe`** — se ejecuta con doble clic, sin instalar nada.
-     Es la opción recomendada: cabe en una USB y funciona en cualquier equipo.
-   - **`MailWatch Setup 0.1.0.exe`** — instalador con asistente, si prefieres dejarla
-     instalada con acceso directo en el escritorio.
+2. En la última versión hay dos archivos `.exe`. Descarga uno:
+   - El que dice **`portable`** — se ejecuta con doble clic, sin instalar nada. Es la
+     opción recomendada: cabe en una USB y funciona en cualquier equipo.
+   - El que dice **`Setup`** — instalador con asistente, si prefieres dejarla instalada
+     con acceso directo en el escritorio.
 3. Ábrelo con doble clic.
 
 > **La primera vez Windows va a mostrar «Windows protegió tu PC».** Es normal y no
