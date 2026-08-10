@@ -119,8 +119,8 @@ caso, el test lo dice.
 
 ## Estado
 
-El detalle de qué requisito está cubierto, qué falta y qué decisiones siguen abiertas
-está en **[PROGRESO.md](PROGRESO.md)**, que se actualiza al cerrar cada historia.
+El detalle de qué requisito está cubierto y qué decisiones siguen abiertas se lleva en el
+[tablero del proyecto](https://github.com/users/msancheza1/projects/6/views/1).
 
 En resumen: el Sprint 1 está cerrado (US-01, US-02, US-03, US-05) y lo que falta es todo
 lo que toca el mundo exterior — cuenta de usuario, backend, base de datos y Gmail real.

@@ -11,6 +11,10 @@ build/
 !apps/desktop/build/**
 *.log
 .DS_Store
+
+# Notas de trabajo personales: viven solo en local, no en el repositorio.
+PROGRESO.md
+CLAUDE.md
 .env
 .env.local
 coverage/
