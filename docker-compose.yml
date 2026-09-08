@@ -1,0 +1,17 @@
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: mailwatch-postgres
+    environment:
+      POSTGRES_USER: mailwatch
+      POSTGRES_PASSWORD: mailwatch
+      POSTGRES_DB: mailwatch
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+
+volumes:
+  postgres_data:
