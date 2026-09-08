@@ -1,0 +1,5 @@
+sender,recipient,subject,content,received_date,has_attachment
+security@fakebank.com,user@mail.com,Verify account,Click here to verify your account,2026-09-01,false
+admin@gmail.com,user@mail.com,Meeting tomorrow,See attached document,2026-09-02,true
+support@paypal-login.com,user@mail.com,Password reset,Reset your password immediately,2026-09-03,false
+fake-security@paypal-login.com,user@mail.com,Verify account,http://paypal-login-security.com/reset password now,2026-09-04,false
