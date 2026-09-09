@@ -4,6 +4,7 @@ import gsap from "gsap";
 import { api } from "../api/axios";
 
 import Sidebar from "../components/Sidebar";
+import EmailWorkbench from "../components/EmailWorkbench";
 import StatCard from "../components/StatCard";
 
 interface Stats {
@@ -21,6 +22,11 @@ export default function Dashboard() {
   const cardsRef = useRef<HTMLDivElement>(null);
 
   const [stats, setStats] = useState<Stats | null>(null);
+
+  async function refreshStats() {
+    const response = await api.get("/dashboard/stats");
+    setStats(response.data);
+  }
 
   useEffect(() => {
     api
@@ -118,6 +124,7 @@ export default function Dashboard() {
             color="bg-emerald-500"
           />
         </section>
+        <EmailWorkbench onChange={refreshStats} />
       </main>
     </div>
   );

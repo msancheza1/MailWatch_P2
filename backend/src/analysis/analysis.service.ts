@@ -1,14 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
 import { DomainRule } from './rules/domain.rule.js';
 import { UrlRule } from './rules/url.rule.js';
+
+import { QuarantineService } from '../quarantine/quarantine.service.js';
 
 @Injectable()
 export class AnalysisService {
   private domainRule: DomainRule;
   private urlRule: UrlRule;
 
-  constructor(private database: DatabaseService) {
+  constructor(
+    private database: DatabaseService,
+    private quarantine: QuarantineService,
+  ) {
     this.domainRule = new DomainRule();
     this.urlRule = new UrlRule();
   }
@@ -27,9 +32,7 @@ export class AnalysisService {
     const email = result.rows[0];
 
     if (!email) {
-      return {
-        error: 'Email not found',
-      };
+      throw new NotFoundException('Email not found');
     }
 
     const indicators: string[] = [];
@@ -68,29 +71,21 @@ export class AnalysisService {
       riskLevel = 'MEDIUM';
     }
 
-    await this.database.query(
-      `
-            INSERT INTO analysis_results
-            (
-                email_id,
-                risk_level,
-                indicators
-            )
-
-            VALUES
-            (
-                $1,
-                $2,
-                $3
-            )
-
-            `,
-
-      [emailId, riskLevel, JSON.stringify(indicators)],
+    const status = await this.quarantine.recordAnalysis(
+      emailId,
+      riskLevel,
+      indicators,
     );
 
     return {
       emailId,
+      category:
+        riskLevel === 'HIGH'
+          ? 'Malicious'
+          : riskLevel === 'MEDIUM'
+            ? 'Suspicious'
+            : 'Safe',
+      status,
 
       risk: riskLevel,
 

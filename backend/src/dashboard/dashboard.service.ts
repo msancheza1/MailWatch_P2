@@ -24,8 +24,7 @@ export class DashboardService {
     const quarantine = await this.database.query(
       `
         SELECT COUNT(*)
-        FROM analysis_results
-        WHERE risk_level='MEDIUM'
+        FROM quarantine
         `,
     );
 

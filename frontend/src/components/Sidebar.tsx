@@ -11,10 +11,10 @@ export default function Sidebar() {
           Dashboard
         </div>
 
-        <div className="flex items-center gap-3 p-3 opacity-80">
+        <a href="#quarantine" className="flex items-center gap-3 p-3 opacity-80">
           <ShieldAlert size={20} />
           Cuarentena
-        </div>
+        </a>
 
         <div className="flex items-center gap-3 p-3 opacity-80">
           <Settings size={20} />

@@ -8,9 +8,10 @@ services:
       POSTGRES_PASSWORD: mailwatch
       POSTGRES_DB: mailwatch
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d:ro
 
 
 volumes:

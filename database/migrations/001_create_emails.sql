@@ -1,4 +1,4 @@
-CREATE TABLE emails (
+CREATE TABLE IF NOT EXISTS emails (
     id SERIAL PRIMARY KEY,
     sender VARCHAR(255) NOT NULL,
     recipient VARCHAR(255),
