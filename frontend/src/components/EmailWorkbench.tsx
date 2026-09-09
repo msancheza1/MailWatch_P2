@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/axios";
+import RiskBadge from "./RiskBadge";
 
 type Email = { id: number; sender: string; subject: string };
 type IsolatedEmail = Email & {
@@ -19,6 +20,8 @@ export default function EmailWorkbench({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  // Clasificación devuelta por el análisis, guardada por id de correo (US-03).
+  const [categories, setCategories] = useState<Record<number, string>>({});
 
   async function refresh() {
     const [available, isolated] = await Promise.all([
@@ -122,6 +125,9 @@ export default function EmailWorkbench({
                     <p className="text-sm text-slate-600">
                       #{email.id} · {email.sender}
                     </p>
+                    <p className="mt-2">
+                      <RiskBadge category={categories[email.id]} />
+                    </p>
                   </div>
                   <button
                     disabled={busy}
@@ -131,6 +137,10 @@ export default function EmailWorkbench({
                         const { data } = await api.post(
                           "/analysis/" + email.id
                         );
+                        setCategories((prev) => ({
+                          ...prev,
+                          [email.id]: data.category,
+                        }));
                         return (
                           "Correo #" +
                           email.id +
@@ -164,6 +174,9 @@ export default function EmailWorkbench({
                   <p className="font-semibold">{email.subject}</p>
                   <p className="text-sm text-slate-600">
                     #{email.id} · {email.sender}
+                  </p>
+                  <p className="mt-2">
+                    <RiskBadge category="Malicious" />
                   </p>
                   <p className="mt-2 text-red-700">{email.reason}</p>
                   <ul className="mt-2 list-inside list-disc text-sm">
