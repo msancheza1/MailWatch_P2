@@ -34,6 +34,8 @@ export interface ResultadoAnalisis {
   risk: NivelRiesgo;
   indicators: string[];
   alerta: Alerta;
+  /** US-06: con qué configuración se tomó esta decisión. */
+  sensibilidad?: "estandar" | "estricto";
 }
 
 const ESTILOS: Record<
@@ -67,7 +69,8 @@ export default function AlertaRiesgo({
   resultado: ResultadoAnalisis;
   onCerrar: () => void;
 }) {
-  const { alerta, indicators, emailId, category, status } = resultado;
+  const { alerta, indicators, emailId, category, status, sensibilidad } =
+    resultado;
   const estilo = ESTILOS[alerta.nivel] ?? ESTILOS.MEDIUM;
   const Icono = estilo.icono;
   const panel = useRef<HTMLElement>(null);
@@ -97,6 +100,11 @@ export default function AlertaRiesgo({
             </h3>
             <RiskBadge category={category} />
             <span className="text-sm text-slate-600">Correo #{emailId}</span>
+            {sensibilidad && (
+              <span className="text-xs text-slate-500">
+                sensibilidad {sensibilidad === "estricto" ? "estricta" : "estándar"}
+              </span>
+            )}
           </div>
 
           <div className="mt-4">

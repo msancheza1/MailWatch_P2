@@ -15,7 +15,11 @@ const client = await pool.connect().catch(async (error) => {
   throw error;
 });
 try {
-  for (const file of ['001_create_emails.sql', '002_analysis_and_quarantine.sql']) {
+  for (const file of [
+    '001_create_emails.sql',
+    '002_analysis_and_quarantine.sql',
+    '003_configuracion.sql',
+  ]) {
     const sql = await readFile(new URL('../../database/migrations/' + file, import.meta.url), 'utf8');
     await client.query(sql);
     console.log('Aplicada: ' + file);

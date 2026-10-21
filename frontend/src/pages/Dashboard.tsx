@@ -5,6 +5,7 @@ import { api } from "../api/axios";
 
 import Sidebar from "../components/Sidebar";
 import EmailWorkbench from "../components/EmailWorkbench";
+import Sensibilidad from "../components/Sensibilidad";
 import StatCard from "../components/StatCard";
 
 interface Stats {
@@ -124,6 +125,9 @@ export default function Dashboard() {
             color="bg-emerald-500"
           />
         </section>
+        <div className="mt-8">
+          <Sensibilidad />
+        </div>
         <EmailWorkbench onChange={refreshStats} />
       </main>
     </div>

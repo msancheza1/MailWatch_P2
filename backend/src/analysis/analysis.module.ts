@@ -5,9 +5,10 @@ import { AnalysisService } from './analysis.service.js';
 
 import { DatabaseModule } from '../database/database.module.js';
 import { QuarantineModule } from '../quarantine/quarantine.module.js';
+import { ConfiguracionModule } from '../configuracion/configuracion.module.js';
 
 @Module({
-  imports: [DatabaseModule, QuarantineModule],
+  imports: [DatabaseModule, QuarantineModule, ConfiguracionModule],
 
   controllers: [AnalysisController],
 
