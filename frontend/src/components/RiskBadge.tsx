@@ -1,10 +1,14 @@
 /**
  * Etiqueta visual de la clasificación de riesgo (US-03).
  *
- * Las categorías son las que ya devuelve `POST /analysis/:id`: Safe,
- * Suspicious y Malicious. Se conservan en inglés porque así están escritas
- * en los criterios de aceptación y en los casos de prueba del Sprint 1.
+ * Las categorías que devuelve `POST /analysis/:id` son Safe, Suspicious y
+ * Malicious. Se conservan en inglés en el código y en la API porque así están
+ * escritas en los criterios de aceptación y en los casos de prueba del Sprint 1
+ * (#31 a #39), pero al usuario se le muestran en español: el producto es en
+ * español.
  */
+
+import { traducirCategoria } from "../lib/textos";
 
 type Categoria = "Safe" | "Suspicious" | "Malicious";
 
@@ -37,7 +41,7 @@ export default function RiskBadge({ category }: { category?: string }) {
       title={DESCRIPCIONES[categoria]}
       className={`${color} rounded-full px-3 py-1 text-xs font-semibold text-white`}
     >
-      {category}
+      {traducirCategoria(category)}
     </span>
   );
 }
