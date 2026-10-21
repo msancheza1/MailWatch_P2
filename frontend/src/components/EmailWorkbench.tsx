@@ -3,6 +3,7 @@ import { api } from "../api/axios";
 import FeedbackButtons, { type Feedback } from "./FeedbackButtons";
 import RiskBadge from "./RiskBadge";
 import AlertaRiesgo, { type ResultadoAnalisis } from "./AlertaRiesgo";
+import { traducirIndicador, traducirMotivo } from "../lib/textos";
 
 type Email = {
   id: number;
@@ -239,10 +240,12 @@ export default function EmailWorkbench({
                     <RiskBadge category="Malicious" />
                   </p>
                   {feedbackControls(email, true)}
-                  <p className="mt-2 text-red-700">{email.reason}</p>
+                  <p className="mt-2 text-red-700">
+                    {traducirMotivo(email.reason)}
+                  </p>
                   <ul className="mt-2 list-inside list-disc text-sm">
                     {email.indicators.map((indicator, index) => (
-                      <li key={index}>{indicator}</li>
+                      <li key={index}>{traducirIndicador(indicator)}</li>
                     ))}
                   </ul>
                   <p className="mt-2 text-xs text-slate-500">
