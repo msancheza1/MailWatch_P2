@@ -16,10 +16,13 @@ export default function Sidebar() {
           Cuarentena
         </a>
 
-        <div className="flex items-center gap-3 p-3 opacity-80">
+        <a
+          href="#configuracion"
+          className="flex items-center gap-3 p-3 opacity-80"
+        >
           <Settings size={20} />
           Configuración
-        </div>
+        </a>
       </nav>
 
       <div>

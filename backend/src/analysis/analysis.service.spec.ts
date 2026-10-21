@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { AnalysisService } from './analysis.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { QuarantineService } from '../quarantine/quarantine.service.js';
+import { ConfiguracionService } from '../configuracion/configuracion.service.js';
 
 describe('US-05 automatic quarantine', () => {
   const query = vi.fn();
@@ -10,6 +11,11 @@ describe('US-05 automatic quarantine', () => {
   const service = new AnalysisService(
     { query } as unknown as DatabaseService,
     { recordAnalysis } as unknown as QuarantineService,
+    // US-06: con la sensibilidad estándar los umbrales son los de siempre,
+    // así que estas pruebas siguen comprobando lo mismo que antes.
+    {
+      obtenerSensibilidad: async () => 'estandar',
+    } as unknown as ConfiguracionService,
   );
 
   beforeEach(() => vi.resetAllMocks());
