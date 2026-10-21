@@ -1,3 +1,4 @@
+import { AuthModule } from './auth/auth.module.js';
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from './database/database.module.js';
 import { EmailModule } from './email/email.module.js';
@@ -8,9 +9,14 @@ import { AppService } from './app.service.js';
 import { RiskClassificationController } from './apps/risk-classification/route.js';
 import { EmailRiskService } from './services/emailRiskService.js';
 
-
 @Module({
-  imports: [DatabaseModule, EmailModule, AnalysisModule, DashboardModule],
+  imports: [
+    AuthModule,
+    DatabaseModule,
+    EmailModule,
+    AnalysisModule,
+    DashboardModule,
+  ],
 
   controllers: [AppController, RiskClassificationController],
 
