@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/axios";
 import RiskBadge from "./RiskBadge";
+import AlertaRiesgo, { type ResultadoAnalisis } from "./AlertaRiesgo";
 
 type Email = { id: number; sender: string; subject: string };
 type IsolatedEmail = Email & {
@@ -22,6 +23,9 @@ export default function EmailWorkbench({
   const [message, setMessage] = useState("");
   // Clasificación devuelta por el análisis, guardada por id de correo (US-03).
   const [categories, setCategories] = useState<Record<number, string>>({});
+  // Último análisis; alimenta la alerta de correo peligroso (US-09).
+  const [ultimoAnalisis, setUltimoAnalisis] =
+    useState<ResultadoAnalisis | null>(null);
 
   async function refresh() {
     const [available, isolated] = await Promise.all([
@@ -50,6 +54,7 @@ export default function EmailWorkbench({
     setBusy(true);
     setError("");
     setMessage("");
+    setUltimoAnalisis(null);
     try {
       const result = await action();
       await Promise.all([refresh(), onChange()]);
@@ -101,6 +106,12 @@ export default function EmailWorkbench({
           {message}
         </p>
       )}
+      {ultimoAnalisis && (
+        <AlertaRiesgo
+          resultado={ultimoAnalisis}
+          onCerrar={() => setUltimoAnalisis(null)}
+        />
+      )}
       {loading ? (
         <p role="status">Cargando correos…</p>
       ) : (
@@ -134,22 +145,17 @@ export default function EmailWorkbench({
                     className="rounded-lg bg-blue-100 px-4 py-2 disabled:opacity-50"
                     onClick={() =>
                       run(async () => {
-                        const { data } = await api.post(
+                        const { data } = await api.post<ResultadoAnalisis>(
                           "/analysis/" + email.id
                         );
                         setCategories((prev) => ({
                           ...prev,
                           [email.id]: data.category,
                         }));
-                        return (
-                          "Correo #" +
-                          email.id +
-                          ": " +
-                          data.category +
-                          (data.status === "quarantined"
-                            ? " — enviado a cuarentena."
-                            : " — permanece disponible.")
-                        );
+                        setUltimoAnalisis(data);
+                        // El resultado lo cuenta la alerta (US-09), con el
+                        // nivel y la acción recomendada, no un mensaje suelto.
+                        return "";
                       })
                     }
                   >
