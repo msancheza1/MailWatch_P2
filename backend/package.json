@@ -23,6 +23,7 @@
     "db:migrate": "node scripts/migrate.mjs",
     "test:quarantine": "vitest run src/analysis/analysis.service.spec.ts src/quarantine/quarantine.service.spec.ts",
     "user:create": "node scripts/create-user.mjs",
+    "test:feedback": "npm run build && node --test test/feedback.integration.mjs",
     "test:registration": "npm run build && node --test test/registration.integration.mjs"
   },
   "dependencies": {

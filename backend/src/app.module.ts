@@ -1,3 +1,4 @@
+import { FeedbackModule } from './feedback/feedback.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from './database/database.module.js';
@@ -13,6 +14,7 @@ import { EmailRiskService } from './services/emailRiskService.js';
 @Module({
   imports: [
     AuthModule,
+    FeedbackModule,
     DatabaseModule,
     EmailModule,
     AnalysisModule,

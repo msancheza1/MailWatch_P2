@@ -45,8 +45,12 @@ export class EmailService {
   async getAllEmails() {
     const result = await this.database.query(
       `
-            SELECT *
+            SELECT emails.*, latest.risk_level
             FROM emails
+            LEFT JOIN LATERAL (
+              SELECT risk_level FROM analysis_results WHERE email_id = emails.id
+              ORDER BY created_at DESC, id DESC LIMIT 1
+            ) latest ON TRUE
             WHERE NOT EXISTS (SELECT 1 FROM quarantine q WHERE q.email_id = emails.id)
             ORDER BY id;
 

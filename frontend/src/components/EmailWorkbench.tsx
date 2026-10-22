@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/axios";
+import FeedbackButtons, { type Feedback } from "./FeedbackButtons";
 import RiskBadge from "./RiskBadge";
 import AlertaRiesgo, { type ResultadoAnalisis } from "./AlertaRiesgo";
 
-type Email = { id: number; sender: string; subject: string };
+type Email = {
+  id: number;
+  sender: string;
+  subject: string;
+  risk_level?: string;
+};
 type IsolatedEmail = Email & {
   reason: string;
   indicators: string[];
@@ -17,6 +23,7 @@ export default function EmailWorkbench({
 }) {
   const [emails, setEmails] = useState<Email[]>([]);
   const [quarantine, setQuarantine] = useState<IsolatedEmail[]>([]);
+  const [feedback, setFeedback] = useState<Record<number, Feedback>>({});
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -27,20 +34,31 @@ export default function EmailWorkbench({
   const [ultimoAnalisis, setUltimoAnalisis] =
     useState<ResultadoAnalisis | null>(null);
 
+  function applyFeedback(items: Feedback[]) {
+    setFeedback(Object.fromEntries(items.map((item) => [item.email_id, item])));
+  }
+
   async function refresh() {
-    const [available, isolated] = await Promise.all([
+    const [available, isolated, reports] = await Promise.all([
       api.get("/emails"),
       api.get("/quarantine"),
+      api.get<Feedback[]>("/feedback"),
     ]);
     setEmails(available.data);
     setQuarantine(isolated.data);
+    applyFeedback(reports.data);
   }
 
   useEffect(() => {
-    Promise.all([api.get("/emails"), api.get("/quarantine")])
-      .then(([available, isolated]) => {
+    Promise.all([
+      api.get("/emails"),
+      api.get("/quarantine"),
+      api.get<Feedback[]>("/feedback"),
+    ])
+      .then(([available, isolated, reports]) => {
         setEmails(available.data);
         setQuarantine(isolated.data);
+        applyFeedback(reports.data);
       })
       .catch(() =>
         setError(
@@ -66,6 +84,25 @@ export default function EmailWorkbench({
     } finally {
       setBusy(false);
     }
+  }
+
+  function report(emailId: number, category: Feedback["category"]) {
+    void run(async () => {
+      await api.post("/feedback/" + emailId, { category });
+      return `Retroalimentación guardada: correo #${emailId} marcado como ${category === "Safe" ? "seguro" : "peligroso"}.`;
+    });
+  }
+
+  function feedbackControls(email: Email, isolated = false) {
+    return (
+      <FeedbackButtons
+        emailId={email.id}
+        feedback={feedback[email.id]}
+        disabled={busy}
+        analyzed={isolated || !!email.risk_level || !!categories[email.id]}
+        onReport={report}
+      />
+    );
   }
 
   return (
@@ -95,6 +132,11 @@ export default function EmailWorkbench({
       <p className="text-sm text-slate-600">
         Cada carga añade una copia del dataset. La cuarentena es simulada y no
         modifica Gmail.
+      </p>
+      <p className="text-sm text-slate-600">
+        ¿La clasificación es incorrecta? Marca el correo como seguro o
+        peligroso. Tu valoración queda guardada para revisar errores; no cambia
+        automáticamente el análisis ni libera correos de cuarentena.
       </p>
       {error && (
         <p role="alert" className="rounded-xl bg-red-100 p-3 text-red-800">
@@ -137,8 +179,20 @@ export default function EmailWorkbench({
                       #{email.id} · {email.sender}
                     </p>
                     <p className="mt-2">
-                      <RiskBadge category={categories[email.id]} />
+                      <RiskBadge
+                        category={
+                          categories[email.id] ??
+                          (email.risk_level === "HIGH"
+                            ? "Malicious"
+                            : email.risk_level === "MEDIUM"
+                              ? "Suspicious"
+                              : email.risk_level === "LOW"
+                                ? "Safe"
+                                : undefined)
+                        }
+                      />
                     </p>
+                    {feedbackControls(email)}
                   </div>
                   <button
                     disabled={busy}
@@ -184,6 +238,7 @@ export default function EmailWorkbench({
                   <p className="mt-2">
                     <RiskBadge category="Malicious" />
                   </p>
+                  {feedbackControls(email, true)}
                   <p className="mt-2 text-red-700">{email.reason}</p>
                   <ul className="mt-2 list-inside list-disc text-sm">
                     {email.indicators.map((indicator, index) => (
