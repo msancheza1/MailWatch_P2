@@ -1,9 +1,11 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+
 import { DashboardService } from './dashboard.service.js';
+import { AdminGuard } from './admin.guard.js';
 
 @Controller('dashboard')
 export class DashboardController {
-  constructor(private dashboardService: DashboardService) {}
+  constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('stats')
   getStats() {
@@ -18,5 +20,11 @@ export class DashboardController {
   @Get('chart')
   getChart() {
     return this.dashboardService.getChart();
+  }
+
+  @Get('model-metrics')
+  @UseGuards(AdminGuard)
+  getModelMetrics() {
+    return this.dashboardService.getModelMetrics();
   }
 }
