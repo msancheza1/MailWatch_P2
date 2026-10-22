@@ -1,8 +1,8 @@
+
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
 import { DomainRule } from './rules/domain.rule.js';
 import { UrlRule } from './rules/url.rule.js';
-
 import { QuarantineService } from '../quarantine/quarantine.service.js';
 
 @Injectable()
@@ -20,12 +20,7 @@ export class AnalysisService {
 
   async analyzeEmail(emailId: number) {
     const result = await this.database.query(
-      `
-            SELECT *
-            FROM emails
-            WHERE id = $1
-            `,
-
+      `SELECT * FROM emails WHERE id = $1`,
       [emailId],
     );
 
@@ -47,7 +42,7 @@ export class AnalysisService {
       'reset',
     ];
 
-    const text = (email.subject + ' ' + email.content).toLowerCase();
+    const text = `${email.subject ?? ''} ${email.content ?? ''}`.toLowerCase();
 
     suspiciousWords.forEach((word) => {
       if (text.includes(word)) {
@@ -55,12 +50,10 @@ export class AnalysisService {
       }
     });
 
-    const domainIndicators = this.domainRule.analyze(email.sender);
-
+    const domainIndicators = this.domainRule.analyze(email.sender ?? '');
     indicators.push(...domainIndicators);
 
-    const urlIndicators = this.urlRule.analyze(email.content);
-
+    const urlIndicators = this.urlRule.analyze(email.content ?? '');
     indicators.push(...urlIndicators);
 
     let riskLevel = 'LOW';
@@ -77,6 +70,17 @@ export class AnalysisService {
       indicators,
     );
 
+    // Puntaje orientativo basado en la cantidad de indicadores.
+    // No representa una probabilidad estadística de que el correo sea malicioso.
+    const riskScore = Math.min(indicators.length * 30, 100);
+
+    const reason =
+      riskLevel === 'HIGH'
+        ? 'Se detectaron múltiples indicadores de riesgo.'
+        : riskLevel === 'MEDIUM'
+          ? 'Se detectaron indicadores sospechosos.'
+          : 'No se detectaron indicadores de riesgo.';
+
     return {
       emailId,
       category:
@@ -86,9 +90,9 @@ export class AnalysisService {
             ? 'Suspicious'
             : 'Safe',
       status,
-
       risk: riskLevel,
-
+      riskScore,
+      reason,
       indicators,
     };
   }
