@@ -20,6 +20,7 @@ try {
     '002_analysis_and_quarantine.sql',
     '003_configuracion.sql',
     '003_auth.sql',
+    '004_feedback.sql',
   ]) {
     const sql = await readFile(new URL('../../database/migrations/' + file, import.meta.url), 'utf8');
     await client.query(sql);

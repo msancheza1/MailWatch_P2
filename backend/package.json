@@ -22,7 +22,8 @@
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "db:migrate": "node scripts/migrate.mjs",
     "test:quarantine": "vitest run src/analysis/analysis.service.spec.ts src/quarantine/quarantine.service.spec.ts",
-    "user:create": "node scripts/create-user.mjs"
+    "user:create": "node scripts/create-user.mjs",
+    "test:feedback": "npm run build && node --test test/feedback.integration.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
@@ -35,6 +36,7 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.11",
     "@nestjs/cli": "^12.0.0",
     "@nestjs/mau": "^0.2.6",
     "@nestjs/schematics": "^12.0.0",
