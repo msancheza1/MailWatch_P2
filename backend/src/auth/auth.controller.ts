@@ -3,6 +3,10 @@ import { AuthService } from './auth.service.js';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
+  @Post('register')
+  register(@Body() body: { email?: unknown; password?: unknown }) {
+    return this.auth.register(body);
+  }
   @Post('login')
   @HttpCode(200)
   login(@Body() body: { email?: unknown; password?: unknown }) {
