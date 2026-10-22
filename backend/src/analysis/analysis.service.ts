@@ -2,7 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
 import { DomainRule } from './rules/domain.rule.js';
 import { UrlRule } from './rules/url.rule.js';
-import { construirAlerta, type NivelRiesgo } from './alerta.js';
+import { construirAlerta } from './alerta.js';
+import { nivelPara } from './umbrales.js';
+import { ConfiguracionService } from '../configuracion/configuracion.service.js';
 
 import { QuarantineService } from '../quarantine/quarantine.service.js';
 
@@ -14,6 +16,7 @@ export class AnalysisService {
   constructor(
     private database: DatabaseService,
     private quarantine: QuarantineService,
+    private configuracion: ConfiguracionService,
   ) {
     this.domainRule = new DomainRule();
     this.urlRule = new UrlRule();
@@ -64,13 +67,10 @@ export class AnalysisService {
 
     indicators.push(...urlIndicators);
 
-    let riskLevel: NivelRiesgo = 'LOW';
-
-    if (indicators.length >= 3) {
-      riskLevel = 'HIGH';
-    } else if (indicators.length > 0) {
-      riskLevel = 'MEDIUM';
-    }
+    // US-06: cuántos indicadores hacen falta para cada nivel lo decide la
+    // sensibilidad que el usuario guardó, no una constante.
+    const sensibilidad = await this.configuracion.obtenerSensibilidad();
+    const riskLevel = nivelPara(indicators.length, sensibilidad);
 
     const status = await this.quarantine.recordAnalysis(
       emailId,
@@ -91,6 +91,10 @@ export class AnalysisService {
       risk: riskLevel,
 
       indicators,
+
+      // US-06: se devuelve para que la interfaz pueda decir con qué
+      // configuración se tomó esta decisión.
+      sensibilidad,
 
       // US-09: nivel de riesgo y acción recomendada para la alerta.
       alerta: construirAlerta(riskLevel, status === 'quarantined'),

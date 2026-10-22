@@ -3,6 +3,7 @@ import { construirAlerta, type NivelRiesgo } from './alerta.js';
 import { AnalysisService } from './analysis.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { QuarantineService } from '../quarantine/quarantine.service.js';
+import { ConfiguracionService } from '../configuracion/configuracion.service.js';
 
 describe('US-09 alerta de correo peligroso', () => {
   describe('construirAlerta', () => {
@@ -53,6 +54,9 @@ describe('US-09 alerta de correo peligroso', () => {
     const service = new AnalysisService(
       { query } as unknown as DatabaseService,
       { recordAnalysis } as unknown as QuarantineService,
+      {
+        obtenerSensibilidad: async () => 'estandar',
+      } as unknown as ConfiguracionService,
     );
 
     beforeEach(() => vi.resetAllMocks());
