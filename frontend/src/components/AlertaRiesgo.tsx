@@ -16,6 +16,7 @@
 import { useEffect, useRef } from "react";
 import { ShieldAlert, AlertTriangle, ShieldCheck, X } from "lucide-react";
 import RiskBadge from "./RiskBadge";
+import { traducirIndicador } from "../lib/textos";
 
 export type NivelRiesgo = "LOW" | "MEDIUM" | "HIGH";
 
@@ -121,7 +122,7 @@ export default function AlertaRiesgo({
               </p>
               <ul className="mt-1 list-inside list-disc text-sm text-slate-700">
                 {indicators.map((indicador, indice) => (
-                  <li key={indice}>{indicador}</li>
+                  <li key={indice}>{traducirIndicador(indicador)}</li>
                 ))}
               </ul>
             </div>
