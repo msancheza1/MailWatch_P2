@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
 import { DomainRule } from './rules/domain.rule.js';
 import { UrlRule } from './rules/url.rule.js';
+import { construirAlerta, type NivelRiesgo } from './alerta.js';
 
 import { QuarantineService } from '../quarantine/quarantine.service.js';
 
@@ -63,7 +64,7 @@ export class AnalysisService {
 
     indicators.push(...urlIndicators);
 
-    let riskLevel = 'LOW';
+    let riskLevel: NivelRiesgo = 'LOW';
 
     if (indicators.length >= 3) {
       riskLevel = 'HIGH';
@@ -90,6 +91,9 @@ export class AnalysisService {
       risk: riskLevel,
 
       indicators,
+
+      // US-09: nivel de riesgo y acción recomendada para la alerta.
+      alerta: construirAlerta(riskLevel, status === 'quarantined'),
     };
   }
 }
