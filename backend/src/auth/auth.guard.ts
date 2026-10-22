@@ -12,7 +12,8 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext) {
     if (
       context.getClass() === AuthController &&
-      context.getHandler() === AuthController.prototype.login
+      (context.getHandler() === AuthController.prototype.login ||
+        context.getHandler() === AuthController.prototype.register)
     )
       return true;
     const request = context.switchToHttp().getRequest();
