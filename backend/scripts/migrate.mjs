@@ -21,6 +21,7 @@ try {
     '003_configuracion.sql',
     '003_auth.sql',
     '004_feedback.sql',
+    '004_model_metrics.sql',
   ]) {
     const sql = await readFile(new URL('../../database/migrations/' + file, import.meta.url), 'utf8');
     await client.query(sql);
@@ -30,3 +31,5 @@ try {
   client.release();
   await pool.end();
 }
+
+

@@ -1,12 +1,19 @@
-import { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
+import { useCallback, useEffect, useState } from "react";
 
+import {
+  ArrowDownRight,
+  Inbox,
+  Mail,
+  ShieldAlert,
+} from "lucide-react";
+
+import type { SessionUser } from "../App";
 import { api } from "../api/axios";
 
 import Sidebar from "../components/Sidebar";
 import EmailWorkbench from "../components/EmailWorkbench";
+import ModelMetrics from "../components/ModelMetrics";
 import Sensibilidad from "../components/Sensibilidad";
-import StatCard from "../components/StatCard";
 
 interface Stats {
   emailsAnalyzed: number;
@@ -15,120 +22,210 @@ interface Stats {
   protectionLevel: string;
 }
 
-export default function Dashboard() {
-  const sidebarRef = useRef<HTMLDivElement>(null);
+interface DashboardProps {
+  user: SessionUser;
+  onLogout: () => void;
+  loggingOut: boolean;
+  sessionError: string;
+}
 
-  const headerRef = useRef<HTMLDivElement>(null);
-
-  const cardsRef = useRef<HTMLDivElement>(null);
-
+export default function Dashboard({
+  user,
+  onLogout,
+  loggingOut,
+  sessionError,
+}: DashboardProps) {
   const [stats, setStats] = useState<Stats | null>(null);
-
-  async function refreshStats() {
-    const response = await api.get("/dashboard/stats");
-    setStats(response.data);
-  }
+  const [statsError, setStatsError] = useState("");
+  const [metricsVersion, setMetricsVersion] = useState(0);
+  const [showMetrics, setShowMetrics] = useState(false);
+  const [today, setToday] = useState(() => new Date());
 
   useEffect(() => {
-    api
-      .get("/dashboard/stats")
+    const timer = window.setInterval(() => {
+      setToday(new Date());
+    }, 60000);
 
-      .then((response) => {
-        setStats(response.data);
-      })
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
 
-      .catch((error) => {
-        console.error("Error cargando estadísticas:", error);
-      });
+  const refreshStats = useCallback(async () => {
+    try {
+      const { data } = await api.get<Stats>("/dashboard/stats");
+
+      setStats(data);
+      setStatsError("");
+    } catch {
+      setStatsError(
+        "No se pudo actualizar el resumen. Los valores anteriores pueden estar desactualizados.",
+      );
+    }
   }, []);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      const cards = Array.from(cardsRef.current?.children ?? []);
+    void refreshStats();
+  }, [refreshStats]);
 
-      gsap.from(sidebarRef.current, {
-        x: -100,
-        opacity: 0,
-        duration: 1,
-        ease: "power3.out",
-      });
+  const handleEmailChange = useCallback(async () => {
+    setMetricsVersion((current) => current + 1);
+    await refreshStats();
+  }, [refreshStats]);
 
-      gsap.from(headerRef.current, {
-        y: -50,
-        opacity: 0,
-        duration: 1,
-        delay: 0.2,
-        ease: "power3.out",
-      });
+  const date = today.toLocaleDateString("es-CO", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
-      gsap.from(cards, {
-        y: 60,
-        opacity: 0,
-        duration: 0.8,
-        stagger: 0.2,
-        delay: 0.4,
-        ease: "power3.out",
-      });
-    });
-
-    return () => ctx.revert();
-  }, []);
+  const cards = [
+    {
+      label: "Correos analizados",
+      value: stats?.emailsAnalyzed,
+      detail: "Correos distintos con un análisis",
+      icon: Mail,
+      tone: "blue",
+    },
+    {
+      label: "Análisis de riesgo alto",
+      value: stats?.threatsBlocked,
+      detail: "Incluye los análisis repetidos",
+      icon: ShieldAlert,
+      tone: "red",
+    },
+    {
+      label: "En cuarentena",
+      value: stats?.quarantine,
+      detail: "Registros de aislamiento simulado",
+      icon: Inbox,
+      tone: "amber",
+    },
+  ];
 
   return (
-    <div className="flex min-h-screen bg-[#eef3ff]">
-      <div ref={sidebarRef}>
-        <Sidebar />
-      </div>
+    <div className="mw-app">
+      <a className="mw-skip" href="#contenido">
+        Saltar al contenido
+      </a>
 
-      <main className="flex-1 p-10">
+      <Sidebar
+        email={user.email}
+        onLogout={onLogout}
+        loggingOut={loggingOut}
+        showMetrics={showMetrics}
+      />
+
+      <main id="contenido" className="mw-main">
+        <header className="mw-topbar">
+          <span>Panel de análisis</span>
+
+          <span className="mw-user-chip" title={user.email}>
+            <span className="mw-status-dot" />
+            {user.email}
+          </span>
+        </header>
+
+        {sessionError && (
+          <p className="mw-message mw-error" role="alert">
+            {sessionError}
+          </p>
+        )}
+
+        <section id="resumen" className="mw-hero">
+          <div>
+            <p className="mw-eyebrow mw-date">{date}</p>
+
+            <h1>
+              Tu correo, bajo una
+              <br className="mw-desktop-break" />
+              mirada más clara.
+            </h1>
+
+            <p>
+              Revisa los análisis, consulta las señales de riesgo y
+              gestiona la cuarentena simulada.
+            </p>
+
+            <a
+              className="mw-button mw-hero-button"
+              href="#correos"
+            >
+              Revisar correos
+              <ArrowDownRight size={18} />
+            </a>
+          </div>
+
+          <div className="mw-hero-art" aria-hidden="true">
+            <div className="mw-orbit" />
+
+            <Mail size={80} strokeWidth={1.2} />
+
+            <span>
+              <ShieldAlert size={26} />
+            </span>
+          </div>
+        </section>
+
+        {statsError && (
+          <div className="mw-message mw-error" role="alert">
+            <span>{statsError}</span>
+
+            <button
+              type="button"
+              className="mw-text-button"
+              onClick={() => void refreshStats()}
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
+
         <section
-          ref={headerRef}
-          className="mb-8 rounded-3xl bg-blue-600 p-8 text-white"
+          className="mw-stats"
+          aria-label="Resumen de actividad"
         >
-          <p className="text-sm opacity-80">MARTES, 8 DE SEPTIEMBRE DE 2026</p>
+          {cards.map(
+            ({ label, value, detail, icon: Icon, tone }) => (
+              <article className="mw-stat" key={label}>
+                <div className="mw-stat-heading">
+                  <h2>{label}</h2>
 
-          <h1 className="mt-3 text-4xl font-bold">Hola, Ana 👋</h1>
+                  <span
+                    className={`mw-stat-icon mw-${tone}`}
+                  >
+                    <Icon size={21} />
+                  </span>
+                </div>
 
-          <p className="mt-3">🟢 Tu correo está protegido — todo se ve bien</p>
+                <strong>
+                  {value === undefined
+                    ? "—"
+                    : value.toLocaleString("es-CO")}
+                </strong>
+
+                <p>{detail}</p>
+              </article>
+            ),
+          )}
         </section>
 
-        <section ref={cardsRef} className="grid grid-cols-4 gap-6">
-          <StatCard
-            title="Correos analizados"
+        <ModelMetrics
+          refreshKey={metricsVersion}
+          onAccessChange={setShowMetrics}
+        />
 
-            value={stats?.emailsAnalyzed ?? 0}
+        <EmailWorkbench onChange={handleEmailChange} />
 
-            color="bg-blue-600"
-          />
-
-          <StatCard
-            title="Amenazas bloqueadas"
-
-            value={stats?.threatsBlocked ?? 0}
-
-            color="bg-red-500"
-          />
-
-          <StatCard
-            title="En cuarentena"
-
-            value={stats?.quarantine ?? 0}
-
-            color="bg-orange-400"
-          />
-
-          <StatCard
-            title="Nivel de protección"
-
-            value={stats?.protectionLevel ?? "-"}
-
-            color="bg-emerald-500"
-          />
-        </section>
-        <div className="mt-8">
+        <div className="mw-config">
           <Sensibilidad />
         </div>
-        <EmailWorkbench onChange={refreshStats} />
+
+        <footer className="mw-footer">
+          MailWatch · La cuarentena es simulada y no modifica tu
+          bandeja de Gmail.
+        </footer>
       </main>
     </div>
   );
