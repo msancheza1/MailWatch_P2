@@ -21,7 +21,8 @@
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "db:migrate": "node scripts/migrate.mjs",
-    "test:quarantine": "vitest run src/analysis/analysis.service.spec.ts src/quarantine/quarantine.service.spec.ts"
+    "test:quarantine": "vitest run src/analysis/analysis.service.spec.ts src/quarantine/quarantine.service.spec.ts",
+    "user:create": "node scripts/create-user.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
