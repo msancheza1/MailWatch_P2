@@ -1,11 +1,31 @@
 # Protocolo de pruebas de usabilidad — MailWatch
 
 **Responsable:** Juan Esteban Martínez (JuanMartinez1906)
-**Estado:** planeado en el Sprint 2. **Se ejecuta en el Sprint 3.**
-**Versión:** 1.0 — 21 de octubre de 2026
+**Estado:** planeado en el Sprint 2. **En ejecución en el Sprint 3.**
+**Versión:** 1.1 — 8 de noviembre de 2026
 
 Este documento define cómo se van a medir las pruebas, no sus resultados. Las tablas
 de registro están vacías a propósito: se llenan durante las sesiones del Sprint 3.
+
+El material para ejecutarlo —consentimiento, guion imprimible, hojas de registro y
+cuestionarios— está en [`docs/usabilidad/`](usabilidad/README.md).
+
+### Qué cambió en la versión 1.1
+
+La versión 1.0 se escribió contra la interfaz de octubre. La entrega «Sprint 2»
+(commit `9f0a09a`) y el [PR #54](https://github.com/msancheza1/MailWatch_P2/pull/54)
+la movieron, y un protocolo que describe una pantalla que ya no existe produce
+hallazgos falsos. Se corrigió, uno por uno, lo que dejó de ser cierto:
+
+| Qué decía la v1.0 | Qué pasa hoy |
+|---|---|
+| Las categorías se muestran como «Malicious», «Suspicious» y «Safe» | Se muestran en español: «Malicioso», «Sospechoso», «Seguro». H-3 se reformula. |
+| Los indicadores se muestran en inglés | Se muestran traducidos, pero **conservan el término citado del correo en inglés**: «Palabra sospechosa en el texto: "password"». |
+| El panel tiene cuatro tarjetas y un «Nivel de protección» | Tiene **tres** tarjetas y no existe «Nivel de protección». T-1 corregido. |
+| Nada advertía que la cuarentena fuera simulada | La alerta y el pie de página dicen «No se modificó nada en Gmail». H-5 pasa a medir si esa frase se lee y se cree. |
+
+Lo que **no** cambió es el objetivo ni los criterios de aceptación: lo que se mide
+sigue siendo si el usuario toma la decisión correcta.
 
 ---
 
@@ -44,9 +64,9 @@ de protección, vuelve al usuario **menos** cuidadoso que antes.
 |---|---|---|
 | H-1 | Al menos 4 de 5 participantes identifican correctamente el correo de riesgo alto sin ayuda. | Tarea T-2, tasa de éxito ≥ 80 % |
 | H-2 | La acción recomendada se sigue más que la explicación técnica: los participantes actúan sobre ella y apenas leen la lista de indicadores. | Observación en T-2 y T-3 + pregunta posterior |
-| H-3 | Los términos «Malicious», «Suspicious» y «Safe» en inglés confunden a parte de los participantes. | T-1, errores de interpretación |
+| H-3 | Traducir las categorías no basta: los indicadores siguen citando el término en inglés que aparece en el correo («…: "password"»), y al menos 2 de 5 participantes no sabrán relacionarlo con lo que ven en el mensaje. | T-3, errores de interpretación |
 | H-4 | Al menos 1 de 5 participantes abre el correo seguro sin revisarlo, confiando solo en la etiqueta verde. | Tarea T-4, conducta observada |
-| H-5 | Los participantes no entienden que la cuarentena es simulada y creen que se modificó su Gmail. | T-5, pregunta directa |
+| H-5 | Decirlo no es comunicarlo: aunque la alerta y el pie dicen «No se modificó nada en Gmail», al menos 2 de 5 participantes seguirán creyendo que la aplicación tocó su cuenta. | T-5, pregunta directa |
 
 Las hipótesis están escritas para poder **fallar**. Si todas se confirman no se aprende
 nada; el valor está en las que se caigan.
@@ -83,20 +103,46 @@ sesión se reprograma: no se hace depuración delante del usuario.
 
 **Técnicas**
 
-- [ ] Postgres levantado (`docker compose up -d`) y migraciones aplicadas (`npm run db:migrate` en `backend/`).
-- [ ] Backend corriendo (`npm run start:dev` en `backend/`).
+- [ ] Postgres levantado (`docker compose up -d`) y migraciones aplicadas (`PGPORT=5433 npm run db:migrate` en `backend/`). El contenedor publica el **5433**, no el 5432, y sin `PGPORT` la conexión falla sin decir por qué.
+- [ ] Backend corriendo (`PGPORT=5433 npm run start:dev` en `backend/`).
 - [ ] Frontend corriendo (`npm run dev` en `frontend/`).
-- [ ] Dataset de prueba cargado **una sola vez** desde «Cargar dataset de prueba». Cada clic añade una copia y duplicaría los correos.
-- [ ] Base de datos restaurada al estado inicial entre participante y participante, para que todos vean lo mismo.
-- [ ] Identificados de antemano los `id` de los correos que se usan en cada tarea, y verificado que el motor los clasifica como espera el guion.
+- [ ] Base de datos en el estado inicial: `PGPORT=5433 npm run usabilidad:reset -- --confirmar`. **Se repite entre participante y participante.** Deja los cinco correos sin analizar, la cuarentena vacía, la sensibilidad en estándar y los `id` otra vez en 1…5, que es como los nombra el guion.
+- [ ] **No** pulsar «Cargar dataset de prueba»: el reinicio ya deja los correos puestos, y cada clic en ese botón añade una copia del dataset.
+- [ ] Sesión abierta con una cuenta **sin permisos de administrador**. Un administrador ve además el panel de métricas del modelo (US-10), que no forma parte de ninguna tarea y cambia lo primero que mira el participante en T-1.
+- [ ] Comprobada la tabla de correos de más abajo: lo que ve el participante tiene que coincidir con lo que espera el guion.
+
+**Los correos de la sesión**
+
+Verificado sobre las reglas del motor (`backend/src/analysis/`) con la sensibilidad
+**estándar**, que es la que deja puesta el reinicio:
+
+| id | Remitente | Asunto | Indicadores | Clasificación | ¿Alerta? | ¿Cuarentena? | Tarea |
+|---|---|---|---|---|---|---|---|
+| 1 | `security@fakebank.com` | Verify account | 3 | **Malicioso** | Sí, riesgo alto | Sí | **T-2, T-3, T-5** |
+| 2 | `admin@gmail.com` | Meeting tomorrow (con adjunto) | 0 | **Seguro** | No | No | **T-4** |
+| 3 | `support@paypal-login.com` | Password reset | 5 | Malicioso | Sí | Sí | — |
+| 4 | `fake-security@paypal-login.com` | Verify account | 12 | Malicioso | Sí | Sí | — |
+| 5 | `newsletter@shop-online.com` | Your account summary | 2 | Sospechoso | No | No | — |
+
+Tres cosas de esta tabla que cambian cómo se conduce la sesión:
+
+1. **El id 1 es el de las tareas 2, 3 y 5** porque es el único que encaja con el enunciado
+   del banco. Los id 3 y 4 también son maliciosos: si el participante analiza uno de ellos
+   por su cuenta, no es un error, se anota y se sigue.
+2. **El id 2 no tiene ni un indicador.** Para T-4 es exactamente lo que se quiere: el
+   participante no tiene ninguna señal en pantalla que lo obligue a dudar, y ahí se ve si
+   duda igual.
+3. **El id 5 es el único «Sospechoso»**, y pasa a «Malicioso» con sensibilidad estricta.
+   No se usa en ninguna tarea; se deja en la bandeja porque una lista en la que todo es
+   rojo o verde haría la decisión más fácil de lo que es en realidad.
 
 **De la sesión**
 
-- [ ] Consentimiento informado firmado (grabación de pantalla y voz, uso académico, datos anónimos).
+- [ ] Consentimiento informado firmado ([`usabilidad/consentimiento.md`](usabilidad/consentimiento.md)).
 - [ ] Grabación de pantalla y audio configurada. No se graba la cara.
 - [ ] Dos personas: un facilitador que habla y un observador que anota. El observador no interviene.
 - [ ] Cronómetro listo, uno por tarea.
-- [ ] Plantillas de registro de la sección 9 impresas o abiertas.
+- [ ] Hoja de registro del participante ([`usabilidad/hoja-registro.md`](usabilidad/hoja-registro.md)) impresa o abierta, y el guion ([`usabilidad/guion-sesion.md`](usabilidad/guion-sesion.md)) a la vista del facilitador.
 
 **Duración estimada:** 35 a 45 minutos por participante.
 
@@ -150,11 +196,14 @@ cansancio y el aprendizaje no caigan siempre sobre la misma tarea.
 > «Esta es la pantalla principal. Antes de hacer nada, cuéntame: ¿qué crees que hace esta
 > aplicación y qué te dice esta pantalla?»
 
-- **Qué se observa:** vocabulario espontáneo, qué mira primero, si entiende las cuatro
-  tarjetas de arriba, si interpreta «Nivel de protección».
+- **Qué se observa:** vocabulario espontáneo, qué mira primero, si entiende las **tres**
+  tarjetas de arriba —«Correos analizados», «Análisis de riesgo alto» y «En cuarentena»—
+  y qué cree que significan sus números.
 - **Éxito:** describe la función del producto sin ayuda.
 - **Tiempo:** máximo 3 minutos. No se cronometra para comparar, se usa como límite.
-- **Relacionada con:** PI-1, H-3.
+- **Ojo:** después del reinicio las tres tarjetas marcan 0. Es el estado correcto, no un
+  fallo; anotar si el participante lo interpreta como que la aplicación no funciona.
+- **Relacionada con:** PI-1.
 
 ---
 
@@ -182,8 +231,13 @@ cansancio y el aprendizaje no caigan siempre sobre la misma tarea.
 - **Qué se observa:** si encuentra la lista de indicadores sin ayuda, si los entiende, si
   le resultan convincentes o le parecen palabrería.
 - **Éxito:** menciona al menos un indicador concreto del correo, no una generalidad.
-- **Riesgo conocido:** hoy los indicadores se muestran en inglés («Keyword detected:
-  password»). Se espera que sea un hallazgo repetido; anotarlo literalmente cuando ocurra.
+- **Dónde está:** la lista aparece en el panel de la alerta, bajo el título «Por qué se
+  clasificó así (N)». Si el participante cierra la alerta con la «X» ya no puede verla sin
+  volver a analizar: es un hallazgo, anotarlo y no ayudarlo.
+- **Riesgo conocido:** los indicadores ya están en español, pero **citan el término tal
+  como aparece en el correo, en inglés**: «Palabra sospechosa en el texto: "password"». El
+  correo también está en inglés. Anotar literalmente si el participante busca esa palabra
+  en el mensaje, si la ignora o si dice que no entiende.
 - **Relacionada con:** PI-2, H-2.
 
 ---
@@ -212,6 +266,10 @@ cansancio y el aprendizaje no caigan siempre sobre la misma tarea.
   que se modificó su Gmail real.
 - **Éxito:** localiza el correo y dice que sigue existiendo, aislado.
 - **Error típico:** cree que se eliminó, o que la aplicación le tocó su cuenta de Gmail.
+- **Lo que ya dice la pantalla:** la alerta trae «No se modificó nada en Gmail» con un
+  enlace a la cuarentena, y el pie de página lo repite. H-5 no mide si el producto lo
+  dice: mide si el participante **lo leyó y lo creyó**. Al preguntarle, no repetir la
+  frase; dejar que la diga él o que no la diga.
 - **Relacionada con:** PI-6, H-5.
 
 ---
@@ -275,6 +333,10 @@ su propósito.
 ## 9. Registro de resultados
 
 Una hoja por participante. Se llena durante la sesión, no después.
+
+Esta sección define **qué** se registra. La copia que se imprime y se llena es
+[`usabilidad/hoja-registro.md`](usabilidad/hoja-registro.md); si las dos dejan de
+coincidir, manda esta.
 
 ### 9.1 Ficha del participante
 
@@ -341,7 +403,8 @@ condicione las respuestas.
 
 ## 11. Análisis posterior
 
-Dentro de las 48 horas siguientes a la última sesión:
+Dentro de las 48 horas siguientes a la última sesión, sobre
+[`usabilidad/consolidado.md`](usabilidad/consolidado.md):
 
 1. Consolidar las cinco hojas en una sola tabla de hallazgos.
 2. Marcar cada hallazgo con cuántos participantes lo sufrieron. **Un problema que le pasa
@@ -366,6 +429,17 @@ Se declaran por honestidad, y para que nadie lea los resultados como más de lo 
   que los resultados reales sean **peores** que los de la prueba.
 - **Los correos son del dataset simulado**, escritos por el propio equipo. Un phishing
   real está mejor hecho.
+- **Los cinco correos del dataset están en inglés y el motor solo detecta términos en
+  inglés** (`backend/src/analysis/rules/`, y está anotado en
+  `frontend/src/lib/textos.ts`). Un phishing escrito en español sale clasificado como
+  «Seguro». La prueba, entonces, **no puede medir la sobreconfianza en el peor caso
+  real**: el participante nunca se encuentra con un correo peligroso etiquetado de verde,
+  que es justo lo que PI-5 querría provocar. Medir eso exige meter un caso en español en
+  `database/seeds/emails_dataset.csv`, lo que cambia los `id` y toca el trabajo de otras
+  historias; se propone para la retrospectiva en vez de hacerlo a mitad del sprint.
+- **El participante lee los correos en inglés.** Si no sabe inglés, lo que se estará
+  midiendo en parte es eso y no la interfaz. Se pregunta el nivel de inglés en el
+  cuestionario previo para poder separarlo al analizar.
 - **No se mide retención ni aprendizaje:** solo el primer contacto con el producto. No
   dice nada sobre si la alerta sigue funcionando a la décima vez que aparece, que es
   justo cuando la gente empieza a ignorarlas.

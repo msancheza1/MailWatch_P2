@@ -23,8 +23,10 @@
     "db:migrate": "node scripts/migrate.mjs",
     "test:quarantine": "vitest run src/analysis/analysis.service.spec.ts src/quarantine/quarantine.service.spec.ts",
     "user:create": "node scripts/create-user.mjs",
+    "usabilidad:reset": "node scripts/reset-usabilidad.mjs",
     "test:feedback": "npm run build && node --test test/feedback.integration.mjs",
-    "test:registration": "npm run build && node --test test/registration.integration.mjs"
+    "test:registration": "npm run build && node --test test/registration.integration.mjs",
+    "test:usabilidad": "node --test test/reset-usabilidad.integration.mjs"
   },
   "dependencies": {
     "@nestjs/common": "12.2.0",
