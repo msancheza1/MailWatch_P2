@@ -27,7 +27,8 @@ export class DashboardService {
       emailsAnalyzed: Number(emails.rows[0].count),
       threatsBlocked: Number(threats.rows[0].count),
       quarantine: Number(quarantine.rows[0].count),
-      protectionLevel: Number(threats.rows[0].count) > 0 ? 'HIGH' : 'LOW',
+      protectionLevel:
+        Number(threats.rows[0].count) > 0 ? 'HIGH' : 'LOW',
     };
   }
 
@@ -61,8 +62,8 @@ export class DashboardService {
     return result.rows;
   }
 
-  async getModelMetrics() {
-    const result = await this.database.query(`
+async getModelMetrics() {
+  const result = await this.database.query(`
     WITH evaluated AS (
       SELECT
         a.email_id,
@@ -112,14 +113,16 @@ export class DashboardService {
     FROM evaluated
   `);
 
-    const row = result.rows[0];
+  const row = result.rows[0];
 
-    return {
-      emailsAnalyzed: Number(row.emails_analyzed),
-      reviewedAnalyses: Number(row.reviewed_analyses),
-      classificationErrors: Number(row.classification_errors),
-      precision:
-        row.precision_percent === null ? null : Number(row.precision_percent),
-    };
-  }
+  return {
+    emailsAnalyzed: Number(row.emails_analyzed),
+    reviewedAnalyses: Number(row.reviewed_analyses),
+    classificationErrors: Number(row.classification_errors),
+    precision:
+      row.precision_percent === null
+        ? null
+        : Number(row.precision_percent),
+  };
+}
 }
