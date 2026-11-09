@@ -7,15 +7,13 @@
  * Solo se sustituye el transporte de base de datos (PGlite); el esquema son las
  * migraciones del repositorio y el SQL es el de `DashboardService`.
  *
- * Dos de las pruebas documentan límites de la entrega, no aciertos. Están
- * escritas para fallar el día en que se arreglen, que es cuando hay que volver
- * a leerlas:
+ * El hallazgo H-01 (issue #57) se corrigió: la retroalimentación de US-08 ya
+ * cuenta como revisión humana. Las pruebas del último bloque cubren esa
+ * corrección y las dos fuentes de revisión que acepta la consulta:
  *
- * - `expected_risk_level` no lo escribe ninguna parte de la aplicación, así que
- *   en una instalación real la precisión siempre dice «Sin datos» y los errores
- *   siempre son 0.
- * - La retroalimentación de US-08 —la corrección que hace el usuario— se guarda
- *   en otra tabla y no alimenta estas métricas.
+ * - `analysis_results.expected_risk_level`, explícita, que nadie escribe
+ *   todavía y que manda sobre cualquier otra fuente.
+ * - La valoración del usuario, que es la revisión que el producto sí recoge.
  */
 
 import 'reflect-metadata';
@@ -209,9 +207,9 @@ describe('CP-US10-01 — métricas del modelo', () => {
     assert.equal(body.emailsAnalyzed, 2, 'pero los dos correos sí están analizados');
   });
 
-  // --- Límites de la entrega ----------------------------------------------
+  // --- Revisión humana (H-01) ---------------------------------------------
 
-  it('LÍMITE: analizar por la aplicación nunca deja un análisis revisado', async () => {
+  it('analizar un correo no lo deja revisado: hace falta que alguien opine', async () => {
     const id = await correo();
     await http.post('/analysis/' + id).set(comoAdmin).expect(201);
 
@@ -221,15 +219,15 @@ describe('CP-US10-01 — métricas del modelo', () => {
     assert.equal(
       rows[0].expected_risk_level,
       null,
-      'ninguna ruta de la aplicación escribe expected_risk_level',
+      'ninguna ruta escribe la columna explícita; la revisión se deriva',
     );
 
     const { body } = await metricas(comoAdmin).expect(200);
-    assert.equal(body.precision, null);
-    assert.equal(body.classificationErrors, 0);
+    assert.equal(body.reviewedAnalyses, 0);
+    assert.equal(body.precision, null, 'la interfaz lo muestra como «Sin datos»');
   });
 
-  it('LÍMITE: la corrección del usuario (US-08) no mueve las métricas', async () => {
+  it('la corrección del usuario (US-08) cuenta como revisión y marca el error', async () => {
     const id = await correo();
     const analisis = (await http.post('/analysis/' + id).set(comoAdmin).expect(201)).body;
     assert.equal(analisis.category, 'Malicious');
@@ -243,11 +241,76 @@ describe('CP-US10-01 — métricas del modelo', () => {
     assert.equal(reporte.body.report_type, 'false_positive');
 
     const { body } = await metricas(comoAdmin).expect(200);
-    assert.equal(
-      body.classificationErrors,
-      0,
-      'el error que reportó la persona no aparece como error del modelo',
+    assert.equal(body.reviewedAnalyses, 1, 'la valoración es una revisión humana');
+    assert.equal(body.classificationErrors, 1, 'y el error del modelo ya se cuenta');
+    assert.equal(body.precision, 0, 'la única predicción maliciosa revisada falló');
+  });
+
+  it('confirmar la clasificación cuenta como acierto, no como error', async () => {
+    const id = await correo();
+    await http.post('/analysis/' + id).set(comoAdmin).expect(201);
+
+    const reporte = await http
+      .post('/feedback/' + id)
+      .set(comoAdmin)
+      .send({ category: 'Malicious' })
+      .expect(201);
+    assert.equal(reporte.body.report_type, 'confirmation');
+
+    const { body } = await metricas(comoAdmin).expect(200);
+    assert.equal(body.reviewedAnalyses, 1);
+    assert.equal(body.classificationErrors, 0);
+    assert.equal(body.precision, 100, 'estar de acuerdo también es evaluar');
+  });
+
+  it('cambiar de opinión reemplaza la revisión anterior', async () => {
+    const id = await correo();
+    await http.post('/analysis/' + id).set(comoAdmin).expect(201);
+
+    await http.post('/feedback/' + id).set(comoAdmin).send({ category: 'Safe' }).expect(201);
+    assert.equal((await metricas(comoAdmin)).body.classificationErrors, 1);
+
+    await http.post('/feedback/' + id).set(comoAdmin).send({ category: 'Malicious' }).expect(201);
+
+    const { body } = await metricas(comoAdmin).expect(200);
+    assert.equal(body.reviewedAnalyses, 1, 'sigue siendo un solo análisis revisado');
+    assert.equal(body.classificationErrors, 0, 'manda la valoración más reciente');
+    assert.equal(body.precision, 100);
+
+    const { rows } = await db.query('SELECT count(*)::int AS n FROM email_feedback');
+    assert.equal(rows[0].n, 2, 'y no se pierde el historial de valoraciones');
+  });
+
+  it('la revisión explícita manda sobre la valoración del usuario', async () => {
+    const id = await correo();
+    await analisisRevisado(id, 'HIGH', 'HIGH');
+    const analisis = (
+      await db.query('SELECT id FROM analysis_results WHERE email_id = $1', [id])
+    ).rows[0];
+
+    // Valoración que contradice la revisión explícita.
+    await db.query(
+      `INSERT INTO email_feedback (email_id, user_id, analysis_id, original_risk, category, report_type)
+       VALUES ($1, 1, $2, 'HIGH', 'Safe', 'false_positive')`,
+      [id, analisis.id],
     );
-    assert.equal(body.precision, null, 'y la precisión sigue sin datos');
+
+    const { body } = await metricas(comoAdmin).expect(200);
+    assert.equal(body.classificationErrors, 0, 'gana expected_risk_level');
+    assert.equal(body.precision, 100);
+  });
+
+  it('la revisión no se arrastra a un análisis nuevo del mismo correo', async () => {
+    const id = await correo();
+    await http.post('/analysis/' + id).set(comoAdmin).expect(201);
+    await http.post('/feedback/' + id).set(comoAdmin).send({ category: 'Safe' }).expect(201);
+    assert.equal((await metricas(comoAdmin)).body.reviewedAnalyses, 1);
+
+    // Reanalizar crea otro análisis, que nadie ha revisado todavía.
+    await http.post('/analysis/' + id).set(comoAdmin).expect(201);
+
+    const { body } = await metricas(comoAdmin).expect(200);
+    assert.equal(body.reviewedAnalyses, 1, 'el análisis nuevo está sin revisar');
+    assert.equal(body.emailsAnalyzed, 1, 'y sigue siendo un solo correo');
   });
 });
