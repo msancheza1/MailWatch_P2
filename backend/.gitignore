@@ -3,6 +3,11 @@
 /node_modules
 /build
 
+# Caché incremental de TypeScript: la reescribe `nest build` en cada
+# compilación, así que versionarla genera un diff en cada rama sin que nadie
+# haya cambiado código.
+*.tsbuildinfo
+
 # Logs
 logs
 *.log

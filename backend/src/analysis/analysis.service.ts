@@ -1,8 +1,11 @@
-
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
 import { DomainRule } from './rules/domain.rule.js';
 import { UrlRule } from './rules/url.rule.js';
+import { construirAlerta } from './alerta.js';
+import { nivelPara } from './umbrales.js';
+import { ConfiguracionService } from '../configuracion/configuracion.service.js';
+
 import { QuarantineService } from '../quarantine/quarantine.service.js';
 
 @Injectable()
@@ -13,6 +16,7 @@ export class AnalysisService {
   constructor(
     private database: DatabaseService,
     private quarantine: QuarantineService,
+    private configuracion: ConfiguracionService,
   ) {
     this.domainRule = new DomainRule();
     this.urlRule = new UrlRule();
@@ -20,7 +24,12 @@ export class AnalysisService {
 
   async analyzeEmail(emailId: number) {
     const result = await this.database.query(
-      `SELECT * FROM emails WHERE id = $1`,
+      `
+            SELECT *
+            FROM emails
+            WHERE id = $1
+            `,
+
       [emailId],
     );
 
@@ -42,7 +51,7 @@ export class AnalysisService {
       'reset',
     ];
 
-    const text = `${email.subject ?? ''} ${email.content ?? ''}`.toLowerCase();
+    const text = (email.subject + ' ' + email.content).toLowerCase();
 
     suspiciousWords.forEach((word) => {
       if (text.includes(word)) {
@@ -50,36 +59,24 @@ export class AnalysisService {
       }
     });
 
-    const domainIndicators = this.domainRule.analyze(email.sender ?? '');
+    const domainIndicators = this.domainRule.analyze(email.sender);
+
     indicators.push(...domainIndicators);
 
-    const urlIndicators = this.urlRule.analyze(email.content ?? '');
+    const urlIndicators = this.urlRule.analyze(email.content);
+
     indicators.push(...urlIndicators);
 
-    let riskLevel = 'LOW';
-
-    if (indicators.length >= 3) {
-      riskLevel = 'HIGH';
-    } else if (indicators.length > 0) {
-      riskLevel = 'MEDIUM';
-    }
+    // US-06: cuántos indicadores hacen falta para cada nivel lo decide la
+    // sensibilidad que el usuario guardó, no una constante.
+    const sensibilidad = await this.configuracion.obtenerSensibilidad();
+    const riskLevel = nivelPara(indicators.length, sensibilidad);
 
     const status = await this.quarantine.recordAnalysis(
       emailId,
       riskLevel,
       indicators,
     );
-
-    // Puntaje orientativo basado en la cantidad de indicadores.
-    // No representa una probabilidad estadística de que el correo sea malicioso.
-    const riskScore = Math.min(indicators.length * 30, 100);
-
-    const reason =
-      riskLevel === 'HIGH'
-        ? 'Se detectaron múltiples indicadores de riesgo.'
-        : riskLevel === 'MEDIUM'
-          ? 'Se detectaron indicadores sospechosos.'
-          : 'No se detectaron indicadores de riesgo.';
 
     return {
       emailId,
@@ -90,10 +87,17 @@ export class AnalysisService {
             ? 'Suspicious'
             : 'Safe',
       status,
+
       risk: riskLevel,
-      riskScore,
-      reason,
+
       indicators,
+
+      // US-06: se devuelve para que la interfaz pueda decir con qué
+      // configuración se tomó esta decisión.
+      sensibilidad,
+
+      // US-09: nivel de riesgo y acción recomendada para la alerta.
+      alerta: construirAlerta(riskLevel, status === 'quarantined'),
     };
   }
 }
