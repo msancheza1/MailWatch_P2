@@ -27,8 +27,7 @@ export class DashboardService {
       emailsAnalyzed: Number(emails.rows[0].count),
       threatsBlocked: Number(threats.rows[0].count),
       quarantine: Number(quarantine.rows[0].count),
-      protectionLevel:
-        Number(threats.rows[0].count) > 0 ? 'HIGH' : 'LOW',
+      protectionLevel: Number(threats.rows[0].count) > 0 ? 'HIGH' : 'LOW',
     };
   }
 
@@ -64,36 +63,54 @@ export class DashboardService {
 
   async getModelMetrics() {
     const result = await this.database.query(`
+    WITH evaluated AS (
       SELECT
-        COUNT(DISTINCT email_id)::int AS emails_analyzed,
+        a.email_id,
+        a.risk_level,
+        COALESCE(
+          a.expected_risk_level,
+          CASE latest.category
+            WHEN 'Safe' THEN 'LOW'
+            WHEN 'Malicious' THEN 'HIGH'
+          END
+        ) AS expected
+      FROM analysis_results a
+      LEFT JOIN LATERAL (
+        SELECT category
+        FROM email_feedback
+        WHERE analysis_id = a.id
+        ORDER BY id DESC
+        LIMIT 1
+      ) latest ON TRUE
+    )
+    SELECT
+      COUNT(DISTINCT email_id)::int AS emails_analyzed,
 
-        COUNT(*) FILTER (
-          WHERE expected_risk_level IS NOT NULL
-        )::int AS reviewed_analyses,
+      COUNT(*) FILTER (
+        WHERE expected IS NOT NULL
+      )::int AS reviewed_analyses,
 
-        COUNT(*) FILTER (
-          WHERE expected_risk_level IS NOT NULL
-            AND risk_level <> expected_risk_level
-        )::int AS classification_errors,
+      COUNT(*) FILTER (
+        WHERE expected IS NOT NULL
+          AND risk_level <> expected
+      )::int AS classification_errors,
 
-        ROUND(
-          100.0 * COUNT(*) FILTER (
+      ROUND(
+        100.0 * COUNT(*) FILTER (
+          WHERE risk_level = 'HIGH'
+            AND expected = 'HIGH'
+        )
+        / NULLIF(
+          COUNT(*) FILTER (
             WHERE risk_level = 'HIGH'
-              AND expected_risk_level = 'HIGH'
-          )
-          /
-          NULLIF(
-            COUNT(*) FILTER (
-              WHERE risk_level = 'HIGH'
-                AND expected_risk_level IS NOT NULL
-            ),
-            0
+              AND expected IS NOT NULL
           ),
-          2
-        ) AS precision_percent
-
-      FROM analysis_results
-    `);
+          0
+        ),
+        2
+      ) AS precision_percent
+    FROM evaluated
+  `);
 
     const row = result.rows[0];
 
@@ -102,9 +119,7 @@ export class DashboardService {
       reviewedAnalyses: Number(row.reviewed_analyses),
       classificationErrors: Number(row.classification_errors),
       precision:
-        row.precision_percent === null
-          ? null
-          : Number(row.precision_percent),
+        row.precision_percent === null ? null : Number(row.precision_percent),
     };
   }
 }
