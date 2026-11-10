@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import {
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Inbox,
@@ -8,6 +9,7 @@ import {
   RefreshCw,
   Search,
   ShieldAlert,
+  Trash2,
   Upload,
 } from "lucide-react";
 
@@ -247,6 +249,36 @@ export default function EmailWorkbench({
       return `Valoración guardada: correo #${emailId} marcado como ${
         category === "Safe" ? "seguro" : "peligroso"
       }.`;
+    });
+  }
+
+  // Liberar un correo de cuarentena.
+  function releaseEmail(emailId: number) {
+    if (!window.confirm(`¿Deseas liberar el correo #${emailId}?`)) {
+      return;
+    }
+
+    void run(async () => {
+      await api.post(`/quarantine/${emailId}/release`);
+
+      return `Correo #${emailId} liberado correctamente.`;
+    });
+  }
+
+  // Eliminar definitivamente un correo de cuarentena.
+  function deleteEmail(emailId: number) {
+    if (
+      !window.confirm(
+        `¿Estás segura de que deseas eliminar definitivamente el correo #${emailId}? Esta acción no se puede deshacer.`,
+      )
+    ) {
+      return;
+    }
+
+    void run(async () => {
+      await api.delete(`/quarantine/${emailId}`);
+
+      return `Correo #${emailId} eliminado correctamente.`;
     });
   }
 
@@ -708,6 +740,28 @@ export default function EmailWorkbench({
                       </p>
 
                       {renderFeedback(email, true)}
+
+                      <div className="mw-actions">
+                        <button
+                          type="button"
+                          className="mw-button mw-secondary"
+                          disabled={busy || loading}
+                          onClick={() => releaseEmail(email.id)}
+                        >
+                          <CheckCircle2 size={16} />
+                          Liberar correo
+                        </button>
+
+                        <button
+                          type="button"
+                          className="mw-button mw-secondary"
+                          disabled={busy || loading}
+                          onClick={() => deleteEmail(email.id)}
+                        >
+                          <Trash2 size={16} />
+                          Eliminar correo
+                        </button>
+                      </div>
                     </div>
                   </details>
                 </li>

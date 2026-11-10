@@ -127,23 +127,35 @@ export class QuarantineService {
   }
 
   async remove(emailId: number) {
-    const result = await this.database.query(
-      `DELETE FROM emails
+  return this.database.transaction(async (client) => {
+    const email = await client.query(
+      `SELECT id FROM emails
        WHERE id = $1
        AND EXISTS (
          SELECT 1 FROM quarantine WHERE email_id = $1
        )
-       RETURNING id`,
+       FOR UPDATE`,
       [emailId],
     );
 
-    if (!result.rowCount) {
+    if (!email.rowCount) {
       throw new NotFoundException('Email not found in quarantine');
     }
 
+    await client.query(
+      'DELETE FROM email_feedback WHERE email_id = $1',
+      [emailId],
+    );
+
+    await client.query(
+      'DELETE FROM emails WHERE id = $1',
+      [emailId],
+    );
+
     return {
-      message: 'Correo eliminado',
+      message: 'Correo eliminado correctamente',
       emailId,
     };
-  }
+  });
+}
 }
