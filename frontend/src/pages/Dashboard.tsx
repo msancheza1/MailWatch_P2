@@ -14,6 +14,7 @@ import Sidebar from "../components/Sidebar";
 import EmailWorkbench from "../components/EmailWorkbench";
 import ModelMetrics from "../components/ModelMetrics";
 import Sensibilidad from "../components/Sensibilidad";
+import GmailPanel from "../components/GmailPanel";
 
 interface Stats {
   emailsAnalyzed: number;
@@ -217,6 +218,7 @@ export default function Dashboard({
         />
 
         <EmailWorkbench onChange={handleEmailChange} />
+        <GmailPanel />
 
         <div className="mw-config">
           <Sensibilidad />
