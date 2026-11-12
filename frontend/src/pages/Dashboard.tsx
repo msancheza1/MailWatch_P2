@@ -14,6 +14,7 @@ import Sidebar from "../components/Sidebar";
 import EmailWorkbench from "../components/EmailWorkbench";
 import ModelMetrics from "../components/ModelMetrics";
 import Sensibilidad from "../components/Sensibilidad";
+import UmbralesClasificacion from "../components/UmbralesClasificacion";
 import GmailPanel from "../components/GmailPanel";
 
 interface Stats {
@@ -222,6 +223,7 @@ export default function Dashboard({
 
         <div className="mw-config">
           <Sensibilidad />
+          <UmbralesClasificacion />
         </div>
 
         <footer className="mw-footer">

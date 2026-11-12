@@ -22,6 +22,7 @@ try {
     '003_auth.sql',
     '004_feedback.sql',
     '004_model_metrics.sql',
+    '005_umbrales_clasificacion.sql',
   ]) {
     const sql = await readFile(new URL('../../database/migrations/' + file, import.meta.url), 'utf8');
     await client.query(sql);

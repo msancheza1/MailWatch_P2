@@ -34,6 +34,7 @@ const MIGRACIONES = [
   '003_auth.sql',
   '004_feedback.sql',
   '004_model_metrics.sql',
+  '005_umbrales_clasificacion.sql',
 ];
 
 describe('CP-US10-01 — métricas del modelo', () => {

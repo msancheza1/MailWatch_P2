@@ -37,6 +37,7 @@ describe('US-08 — reportar clasificaciones incorrectas', () => {
       '003_configuracion.sql',
       '003_auth.sql',
       '004_feedback.sql',
+      '005_umbrales_clasificacion.sql',
     ]) {
       const sql = await readFile(
         new URL('../../database/migrations/' + file, import.meta.url),

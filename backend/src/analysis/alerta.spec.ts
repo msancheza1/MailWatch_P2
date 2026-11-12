@@ -4,6 +4,7 @@ import { AnalysisService } from './analysis.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { QuarantineService } from '../quarantine/quarantine.service.js';
 import { ConfiguracionService } from '../configuracion/configuracion.service.js';
+import { UMBRALES_POR_DEFECTO } from './umbrales.js';
 
 describe('US-09 alerta de correo peligroso', () => {
   describe('construirAlerta', () => {
@@ -55,7 +56,10 @@ describe('US-09 alerta de correo peligroso', () => {
       { query } as unknown as DatabaseService,
       { recordAnalysis } as unknown as QuarantineService,
       {
-        obtenerSensibilidad: async () => 'estandar',
+        obtenerAjustesAnalisis: async () => ({
+          sensibilidad: 'estandar',
+          umbrales: UMBRALES_POR_DEFECTO,
+        }),
       } as unknown as ConfiguracionService,
     );
 

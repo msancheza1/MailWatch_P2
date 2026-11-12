@@ -4,6 +4,7 @@ import { AnalysisService } from './analysis.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { QuarantineService } from '../quarantine/quarantine.service.js';
 import { ConfiguracionService } from '../configuracion/configuracion.service.js';
+import { UMBRALES_POR_DEFECTO } from './umbrales.js';
 
 describe('US-05 automatic quarantine', () => {
   const query = vi.fn();
@@ -14,7 +15,10 @@ describe('US-05 automatic quarantine', () => {
     // US-06: con la sensibilidad estándar los umbrales son los de siempre,
     // así que estas pruebas siguen comprobando lo mismo que antes.
     {
-      obtenerSensibilidad: async () => 'estandar',
+      obtenerAjustesAnalisis: async () => ({
+        sensibilidad: 'estandar',
+        umbrales: UMBRALES_POR_DEFECTO,
+      }),
     } as unknown as ConfiguracionService,
   );
 

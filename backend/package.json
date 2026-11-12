@@ -26,6 +26,7 @@
     "usabilidad:reset": "node scripts/reset-usabilidad.mjs",
     "test:feedback": "npm run build && node --test test/feedback.integration.mjs",
     "test:registration": "npm run build && node --test test/registration.integration.mjs",
+    "test:umbrales": "npm run build && node --test test/umbrales.integration.mjs",
     "test:usabilidad": "node --test test/reset-usabilidad.integration.mjs",
     "test:metricas": "npm run build && node --test test/model-metrics.integration.mjs"
   },

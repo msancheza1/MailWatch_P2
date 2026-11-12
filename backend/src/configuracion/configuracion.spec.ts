@@ -4,7 +4,11 @@ import { ConfiguracionService } from './configuracion.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { QuarantineService } from '../quarantine/quarantine.service.js';
 import { AnalysisService } from '../analysis/analysis.service.js';
-import { nivelPara, esSensibilidad } from '../analysis/umbrales.js';
+import {
+  nivelPara,
+  esSensibilidad,
+  UMBRALES_POR_DEFECTO,
+} from '../analysis/umbrales.js';
 
 describe('US-06 configuración del nivel de sensibilidad', () => {
   describe('umbrales', () => {
@@ -87,12 +91,12 @@ describe('US-06 configuración del nivel de sensibilidad', () => {
   describe('CP-US06-01 — el análisis usa la nueva configuración', () => {
     const query = vi.fn();
     const recordAnalysis = vi.fn();
-    const obtenerSensibilidad = vi.fn();
+    const obtenerAjustesAnalisis = vi.fn();
 
     const service = new AnalysisService(
       { query } as unknown as DatabaseService,
       { recordAnalysis } as unknown as QuarantineService,
-      { obtenerSensibilidad } as unknown as ConfiguracionService,
+      { obtenerAjustesAnalisis } as unknown as ConfiguracionService,
     );
 
     // Correo de zona gris: exactamente dos indicadores («account» y «login»).
@@ -112,7 +116,10 @@ describe('US-06 configuración del nivel de sensibilidad', () => {
 
     it('en estándar lo deja en sospechoso y disponible', async () => {
       query.mockResolvedValue(zonaGris);
-      obtenerSensibilidad.mockResolvedValue('estandar');
+      obtenerAjustesAnalisis.mockResolvedValue({
+        sensibilidad: 'estandar',
+        umbrales: UMBRALES_POR_DEFECTO,
+      });
       recordAnalysis.mockResolvedValue('available');
 
       const resultado = await service.analyzeEmail(1);
@@ -128,7 +135,10 @@ describe('US-06 configuración del nivel de sensibilidad', () => {
 
     it('en estricto el mismo correo pasa a malicioso y alerta', async () => {
       query.mockResolvedValue(zonaGris);
-      obtenerSensibilidad.mockResolvedValue('estricto');
+      obtenerAjustesAnalisis.mockResolvedValue({
+        sensibilidad: 'estricto',
+        umbrales: UMBRALES_POR_DEFECTO,
+      });
       recordAnalysis.mockResolvedValue('quarantined');
 
       const resultado = await service.analyzeEmail(1);

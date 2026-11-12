@@ -82,8 +82,9 @@ export class AnalysisService {
     indicators.push(...this.domainRule.analyze(email.sender));
     indicators.push(...this.urlRule.analyze(email.content));
 
-    const sensibilidad = await this.configuracion.obtenerSensibilidad();
-    const riskLevel = nivelPara(indicators.length, sensibilidad);
+    const { sensibilidad, umbrales } =
+      await this.configuracion.obtenerAjustesAnalisis();
+    const riskLevel = nivelPara(indicators.length, sensibilidad, umbrales);
 
     return { indicators, sensibilidad, riskLevel };
   }
