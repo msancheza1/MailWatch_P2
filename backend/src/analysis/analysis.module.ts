@@ -9,9 +9,8 @@ import { ConfiguracionModule } from '../configuracion/configuracion.module.js';
 
 @Module({
   imports: [DatabaseModule, QuarantineModule, ConfiguracionModule],
-
   controllers: [AnalysisController],
-
   providers: [AnalysisService],
+  exports: [AnalysisService]
 })
 export class AnalysisModule {}

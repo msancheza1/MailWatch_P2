@@ -10,6 +10,7 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { RiskClassificationController } from './apps/risk-classification/route.js';
 import { EmailRiskService } from './services/emailRiskService.js';
+import { GmailController } from './gmail/gmail.controller.js';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { EmailRiskService } from './services/emailRiskService.js';
     ConfiguracionModule,
   ],
 
-  controllers: [AppController, RiskClassificationController],
+  controllers: [AppController, RiskClassificationController, GmailController],
 
   providers: [AppService, EmailRiskService],
 })
